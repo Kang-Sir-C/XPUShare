@@ -1122,11 +1122,12 @@ static bool driver_enforcement_enabled() {
    pthread_once(&init_done, initialize);
    if (hook_inf.coverage_mode) hook_inf.call_count[CU_HOOK_DEVICE_TOTOAL_MEM]++;
  
-  XpushareEnforcementLayer layer = xpushare_enforcement_layer();
-  if (layer == XPUSHARE_LAYER_PROFILE || layer == XPUSHARE_LAYER_NONE) {
-     static real_fn_t real_fn = NULL;
-     if (!real_fn) {
-       real_fn = (real_fn_t)dlsym(RTLD_NEXT, "cuDeviceTotalMem");
+ XpushareEnforcementLayer layer = xpushare_enforcement_layer();
+ if (layer == XPUSHARE_LAYER_PROFILE || layer == XPUSHARE_LAYER_NONE) {
+    typedef CUresult(CUDAAPI *real_fn_t)(size_t *, CUdevice);
+    static real_fn_t real_fn = NULL;
+    if (!real_fn) {
+      real_fn = (real_fn_t)dlsym(RTLD_NEXT, "cuDeviceTotalMem");
      }
      if (real_fn) {
        return real_fn(bytes, dev);
