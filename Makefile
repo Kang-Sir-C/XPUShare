@@ -13,6 +13,7 @@ endif
 TARGET=xpushare-scheduler xpushare-collector xpushare-aggregator xpushare-config xpushare-query-ip
 GO=go
 GO_MODULE=GO111MODULE=on
+GO_BUILD_FLAGS=-buildvcs=false
 BIN_DIR=bin/
 ALPINE_COMPILE_FLAGS=CGO_ENABLED=1 GOOS=linux GOARCH=arm64
 NVML_COMPILE_FLAGS=CGO_LDFLAGS_ALLOW='-Wl,--unresolved-symbols=ignore-in-object-files' GOOS=linux GOARCH=arm64
@@ -23,19 +24,19 @@ PACKAGE_PREFIX=xpushare/cmd/
 all: $(TARGET)
 
 xpushare-collector:
-	$(GO_MODULE) $(NVML_COMPILE_FLAGS) $(GO) build -o $(BIN_DIR)$@ $(PACKAGE_PREFIX)$@
+	$(GO_MODULE) $(NVML_COMPILE_FLAGS) $(GO) build $(GO_BUILD_FLAGS) -o $(BIN_DIR)$@ $(PACKAGE_PREFIX)$@
 
 xpushare-scheduler:
-	$(GO_MODULE) $(ALPINE_COMPILE_FLAGS) $(GO) build -o $(BIN_DIR)$@ $(PACKAGE_PREFIX)$@
+	$(GO_MODULE) $(ALPINE_COMPILE_FLAGS) $(GO) build $(GO_BUILD_FLAGS) -o $(BIN_DIR)$@ $(PACKAGE_PREFIX)$@
 
 xpushare-aggregator:
-	$(GO_MODULE) $(ALPINE_COMPILE_FLAGS) $(GO) build -o $(BIN_DIR)$@ $(PACKAGE_PREFIX)$@
+	$(GO_MODULE) $(ALPINE_COMPILE_FLAGS) $(GO) build $(GO_BUILD_FLAGS) -o $(BIN_DIR)$@ $(PACKAGE_PREFIX)$@
 	
 xpushare-config:
-	$(GO_MODULE) $(ALPINE_COMPILE_FLAGS) $(GO) build -o $(BIN_DIR)$@ $(PACKAGE_PREFIX)$@
+	$(GO_MODULE) $(ALPINE_COMPILE_FLAGS) $(GO) build $(GO_BUILD_FLAGS) -o $(BIN_DIR)$@ $(PACKAGE_PREFIX)$@
 
 xpushare-query-ip:
-	$(GO_MODULE) $(ALPINE_COMPILE_FLAGS) $(GO) build -o $(BIN_DIR)$@ $(PACKAGE_PREFIX)$@
+	$(GO_MODULE) $(ALPINE_COMPILE_FLAGS) $(GO) build $(GO_BUILD_FLAGS) -o $(BIN_DIR)$@ $(PACKAGE_PREFIX)$@
 
 xhook-scheduler:
 	$(NERDCTL) build -t $(CONTAINER_IMAGE) -f ./docker/xhook-scheduler/Dockerfile . --no-cache
