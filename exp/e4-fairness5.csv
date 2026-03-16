@@ -1,0 +1,5 @@
+log,iter_per_sec,normalised_ips
+e4-a-5-02.log,982.052096,4910.260480
+e4-b-5-03.log,1298.041761,4326.805870
+
+jain_fairness (normalised),0.996026

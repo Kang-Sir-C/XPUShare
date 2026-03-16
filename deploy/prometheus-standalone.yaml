@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: xpushare-prometheus-config
+  namespace: kube-system
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 5s
+      evaluation_interval: 5s
+
+    scrape_configs:
+      - job_name: "xpushare-collector"
+        metrics_path: /xpushare-collector
+        # NOTE: xpushare-collector is a DaemonSet behind a headless Service.
+        # Use DNS service discovery so Prometheus scrapes every Pod IP.
+        dns_sd_configs:
+          - names:
+              - xpushare-collector.kube-system.svc
+            type: A
+            port: 9004
+
+      - job_name: "xpushare-aggregator"
+        metrics_path: /xpushare-aggregator
+        dns_sd_configs:
+          - names:
+              - xpushare-aggregator.kube-system.svc
+            type: A
+            port: 9005
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: xpushare-prometheus
+  namespace: kube-system
+  labels:
+    app: xpushare-prometheus
+spec:
+  selector:
+    app: xpushare-prometheus
+  ports:
+    - name: web
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xpushare-prometheus
+  namespace: kube-system
+  labels:
+    app: xpushare-prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: xpushare-prometheus
+  template:
+    metadata:
+      labels:
+        app: xpushare-prometheus
+    spec:
+      containers:
+        - name: prometheus
+          # 使用 nerdctl -n k8s.io pull 或 nerdctl -n k8s.io load 预加载镜像后，可保持 imagePullPolicy=Never。
+          image: 192.168.15.101/prom/prometheus:v2.52.0
+          imagePullPolicy: Never
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --web.enable-lifecycle
+          ports:
+            - name: web
+              containerPort: 9090
+          volumeMounts:
+            - name: cfg
+              mountPath: /etc/prometheus
+              readOnly: true
+            - name: data
+              mountPath: /prometheus
+      volumes:
+        - name: cfg
+          configMap:
+            name: xpushare-prometheus-config
+        - name: data
+          emptyDir: {}

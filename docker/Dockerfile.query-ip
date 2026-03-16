@@ -1,0 +1,10 @@
+# 使用一个轻量级的基础镜像
+# (它会自动拉取您 aarch64 架构的版本)
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/ubuntu:22.04-linuxarm64
+
+# 1. 复制您本地已经编译好的二进制文件
+#    假设您在 /root/XPUShare 目录下运行 build 命令
+COPY bin/xpushare-query-ip /usr/bin/xpushare-query-ip
+
+# 2. 运行命令
+CMD ["xpushare-query-ip"]

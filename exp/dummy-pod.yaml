@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mnist
+  labels:
+    sharedgpu/gpu_limit: "0.4"
+    sharedgpu/gpu_request: "0.2"
+    sharedgpu/gpu_mem: "2147483648"
+    sharedgpu/gpu_model: "Iluvatar-BI-V150"
+spec:
+  containers:
+  - name: pytorch
+    image: corex:with-greatwall
+    command: ["/bin/bash", "-c", "sleep infinity"]
+    
+    # 修复 1: 挂载 log 目录
+    volumeMounts:
+    - name: "xpushare-library"
+      mountPath: "/xpushare/library"
+    - name: "xpushare-log"
+      mountPath: "/xpushare/log"
+      
+  # 修复 2: 定义 log 卷
+  volumes:
+  - name: "xpushare-library"
+    hostPath:
+      path: "/xpushare/library"
+      type: Directory
+  - name: "xpushare-log"
+    hostPath:
+      path: "/xpushare/log"
+      type: DirectoryOrCreate

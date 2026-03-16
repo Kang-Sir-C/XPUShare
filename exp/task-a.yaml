@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: task-a
+  namespace: default
+  labels:
+    app: fragmentation-exp
+    experiment/task: "A"
+    sharedgpu/gpu_request: "0.25"        # 25%
+    sharedgpu/gpu_limit: "0.25"
+    sharedgpu/gpu_model: "Iluvatar-BI-V150"
+    sharedgpu/gpu_mem: "2147483648"      # 可按需调整
+spec:
+  restartPolicy: Never
+  containers:
+    - name: task-a
+      image: corex:with-greatwall
+      command: ["sh", "-c", "sleep 3600"]
+      env:
+        - name: IX_VISIBLE_DEVICES
+          value: "0"                     # GPU 0

@@ -1,0 +1,7 @@
+bin/*
+docker/vGPUPod/uuid
+doc/yaml/label
+test/*
+deploy/config/*
+*.zip
+_tmp_*

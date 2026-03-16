@@ -1,0 +1,18 @@
+# 同样使用轻量级基础镜像
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/ubuntu:22.04-linuxarm64
+
+ENV XPU_PROVIDER=iluvatar
+# Optional overrides: XPU_VISIBLE_DEVICES_ENV, XPU_DEVICE_LIST_CMD
+
+# 1. 复制本地已编译好的二进制文件
+COPY bin/xpushare-collector /usr/bin/xpushare-collector
+
+# 2. !! 关键：复制天数 GPU 驱动库 !!
+#
+# 需要确认 libixml.so 在宿主机上的确切路径。
+# 根据 go-ixml 的 README，它可能在 /usr/local/corex/lib/。
+#
+# 格式: COPY [宿主机上的 .so 路径] [镜像中的 .so 路径]
+# COPY libixml.so /usr/lib/libixml.so
+
+CMD ["xpushare-collector"]

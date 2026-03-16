@@ -1,0 +1,115 @@
+\relax 
+\citation{gandiva,salus}
+\citation{kubeshare,voda}
+\citation{orion}
+\@writefile{toc}{\contentsline {title}{XPUShare: A Containerized Cluster GPU Sharing Framework\unskip \ \ignorespaces  for Closed-Source CUDA-Like Heterogeneous Platforms}{1}{}\protected@file@percent }
+\@writefile{toc}{\authcount {1}}
+\@writefile{toc}{\contentsline {author}{Anonymous Author(s)}{1}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{}\protected@file@percent }
+\citation{k8s-device-plugin,kubeshare}
+\citation{gemini,cuda-interception}
+\citation{deepspark-toolkit,cdi}
+\citation{cuda-interception}
+\citation{k8s-device-plugin,cdi}
+\citation{moorethreads-musa,metax-vllm,deepspark-toolkit,paddleocr-metax,biren-plugin,cdi}
+\citation{cuda-interception}
+\@writefile{toc}{\contentsline {paragraph}{Framework vs.\ pluggable mechanisms.}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Background and Challenges}{3}{}\protected@file@percent }
+\newlabel{sec:background}{{2}{3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Background and Terminology}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Three Key Engineering Challenges During Bring-Up}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Challenge\nobreakspace  {}1: Discovery schema inconsistency.}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Challenge\nobreakspace  {}2: Binding convention instability and unverifiability.}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Challenge\nobreakspace  {}3: Execution boundary uncertainty.}{3}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces XPUShare architecture and bypass-aware interception workflow. The red path illustrates the undocumented bypass that closed-source runtimes may introduce, bypassing the exported driver API boundary.}}{4}{}\protected@file@percent }
+\newlabel{fig:arch}{{1}{4}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}XPUShare Framework Design}{4}{}\protected@file@percent }
+\newlabel{sec:design}{{3}{4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Design Principles}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Overall Architecture and Data Flow}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Formal Definitions: Device View and Binding Contract}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Execution Layer: Pluggable Interception and Arbitration}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Prototype Implementation and Platform Integration}{6}{}\protected@file@percent }
+\newlabel{sec:impl}{{4}{6}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Implementation Overview}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Platform Integration: Verifiable Binding Contract Injection}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Platform Integration: Boundary Reachability Diagnosis}{6}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Experimental environment parameters. We report hardware and the GPU runtime version and selected software versions; the remaining versions are collected by standard commands (\texttt  {containerd --version}, \texttt  {ixsmi}, Iluvatar's GPU management utility).}}{7}{}\protected@file@percent }
+\newlabel{tab:env}{{1}{7}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Experimental Environment}{7}{}\protected@file@percent }
+\newlabel{sec:env}{{4.4}{7}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Evaluation}{7}{}\protected@file@percent }
+\newlabel{sec:eval}{{5}{7}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}E1: Execution Boundary Reachability (Coverage Signals)}{7}{}\protected@file@percent }
+\newlabel{sec:eval-e1}{{5.1}{7}}
+\@writefile{toc}{\contentsline {paragraph}{Goal.}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Method.}{7}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces E1 boundary reachability evidence (selected categories; CSV fields: category, driver\_mean, driver\_cv, runtime\_mean, runtime\_cv).}}{8}{}\protected@file@percent }
+\newlabel{tab:e1}{{2}{8}}
+\@writefile{toc}{\contentsline {paragraph}{Metrics.}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Results.}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}E2: Binding Consistency (Control-Plane Closed Loop)}{8}{}\protected@file@percent }
+\newlabel{sec:eval-e2}{{5.2}{8}}
+\@writefile{toc}{\contentsline {paragraph}{Goal.}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Method.}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Metrics.}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Results.}{8}{}\protected@file@percent }
+\citation{kubeshare}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces E3 memory view consistency and quota enforcement evidence.}}{9}{}\protected@file@percent }
+\newlabel{tab:e3}{{3}{9}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}E3: Memory View Consistency and Quota Enforcement}{9}{}\protected@file@percent }
+\newlabel{sec:eval-e3}{{5.3}{9}}
+\@writefile{toc}{\contentsline {paragraph}{Goal.}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Method.}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Metrics.}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Results.}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}E4: Two-Pod Proportional Sharing (Execution-Side Evidence)}{9}{}\protected@file@percent }
+\newlabel{sec:eval-e4}{{5.4}{9}}
+\@writefile{toc}{\contentsline {paragraph}{Goal.}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Method.}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Metrics.}{9}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces E4 proportional sharing evidence (weights $w_A{=}0.2$, $w_B{=}0.4$).}}{10}{}\protected@file@percent }
+\newlabel{tab:e4}{{4}{10}}
+\@writefile{toc}{\contentsline {paragraph}{Results.}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}E6: Single-Pod Compute-Cap Sensitivity (Fallback Evidence)}{10}{}\protected@file@percent }
+\newlabel{sec:eval-e6}{{5.5}{10}}
+\@writefile{toc}{\contentsline {paragraph}{Goal.}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Method.}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Results.}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Discussion}{10}{}\protected@file@percent }
+\newlabel{sec:discussion}{{6}{10}}
+\@writefile{toc}{\contentsline {paragraph}{Limitations and interpretation.}{10}{}\protected@file@percent }
+\citation{guardian}
+\citation{xsched}
+\citation{k8s-device-plugin,nvidia-device-plugin,gpushare-extender,kubeshare,voda}
+\citation{gemini,orion,cuda-interception}
+\citation{nvidia-mps,chimera}
+\citation{guardian}
+\citation{xsched}
+\@writefile{toc}{\contentsline {paragraph}{Interception boundary selection.}{11}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Security and generality scope.}{11}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}Related Work}{11}{}\protected@file@percent }
+\newlabel{sec:related}{{7}{11}}
+\@writefile{toc}{\contentsline {section}{\numberline {8}Conclusion}{11}{}\protected@file@percent }
+\newlabel{sec:conclusion}{{8}{11}}
+\bibcite{kubeshare}{1}
+\bibcite{gemini}{2}
+\bibcite{k8s-device-plugin}{3}
+\bibcite{nvidia-device-plugin}{4}
+\bibcite{gpushare-extender}{5}
+\bibcite{cdi}{6}
+\bibcite{voda}{7}
+\bibcite{orion}{8}
+\bibcite{gandiva}{9}
+\bibcite{salus}{10}
+\bibcite{cuda-interception}{11}
+\bibcite{guardian}{12}
+\bibcite{chimera}{13}
+\bibcite{nvidia-mps}{14}
+\bibcite{deepspark-toolkit}{15}
+\bibcite{moorethreads-musa}{16}
+\bibcite{metax-vllm}{17}
+\bibcite{paddleocr-metax}{18}
+\bibcite{biren-plugin}{19}
+\bibcite{xsched}{20}
+\gdef \@abspage@last{13}

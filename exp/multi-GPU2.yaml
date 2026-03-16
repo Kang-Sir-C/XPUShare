@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: job-e-privileged
+  labels:
+    app: gpu-test
+spec:
+  # 1. 切换回默认调度器，不再经过 xpushare
+  schedulerName: default-scheduler
+  restartPolicy: Never
+  # 2. 必须指定该 Pod 运行在有这张卡的节点上 (替换为你之前的 Node Name)
+  nodeName: localhost.localdomain
+  containers:
+    - name: a
+      image: corex:with-greatwall
+      imagePullPolicy: Never
+      command: ["sh", "-c", "sleep infinity"]
+      # 3. 开启特权模式，直接穿透看到所有硬件
+      securityContext:
+        privileged: true
+      env:
+      - name: CU_HOOK_DEBUG
+        value: "1"
+      - name: JOB_NAME
+        value: "E"
+      # 4. 在这里指定你想要的卡。因为开了特权，容器能看到宿主机所有卡，
+      #    所以驱动会根据这个变量只加载 12 和 13。
+      - name: IX_VISIBLE_DEVICES
+        value: "12,13"

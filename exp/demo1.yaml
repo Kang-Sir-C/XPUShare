@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mnist-ultimate-test
+  labels:
+    "sharedgpu/gpu_request": "0.2"
+    "sharedgpu/gpu_limit": "0.4"
+    "sharedgpu/gpu_model": "Iluvatar-BI-V150"
+    "sharedgpu/gpu_mem": "2147483648"
+spec:
+  # ========================================================
+  # [终极修复] 强制客户端和服务端在同一个网络
+  # ========================================================
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet # (保持 DNS 能用)
+  
+  restartPolicy: Never
+  containers:
+    - name: pytorch
+      image: corex:with-greatwall
+      command: ["sh", "-c", "sleep infinity"]
+      imagePullPolicy: Never
+
+      env:
+      - name: CU_HOOK_DEBUG
+        value: "1"
+      - name: XPUSHARE_ENFORCEMENT_LAYER
+        value: "runtime"
+      - name: LD_PRELOAD
+        value: "/xpushare/library/libxhook.so.1"
+      - name: POD_MANAGER_PORT
+        value: "50051" # 端口正确
+      - name: POD_MANAGER_IP
+        value: "192.168.15.101" # IP 正确
+      - name: POD_NAME
+        value: "default/mnist-ultimate-test"
+
+      volumeMounts:
+      - name: "xpushare-library"
+        mountPath: "/xpushare/library"
+        readOnly: true
+      - name: "xpushare-log"
+        mountPath: "/xpushare/log"
+
+  volumes:
+  - name: "xpushare-library"
+    hostPath:
+      path: "/xpushare/library"
+      type: Directory
+  - name: "xpushare-log"
+    hostPath:
+      path: "/xpushare/log"
+      type: DirectoryOrCreate

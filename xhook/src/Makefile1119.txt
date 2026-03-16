@@ -1,0 +1,88 @@
+CUDA_PATH ?= /usr/local/corex-4.3.6
+
+PWD := $(shell pwd)
+PREFIX ?= $(PWD)/..
+
+# [NEW] 定义 C 编译器，用于编译纯 C 的 shim.c
+CC := gcc
+
+# GENCODE_FLAGS += $(foreach sm,$(SMS),-gencode arch=compute_$(sm),code=sm_$(sm))
+# 根据天数文档, --cuda-gpu-arch=ivcore11 是默认值, 也可以显式添加
+GENCODE_FLAGS += --cuda-gpu-arch=ivcore11
+
+# MODIFIED: 将 CXX (g++) 和 NVCC (nvcc) 全部指向天数的 clang++
+CXX := $(CUDA_PATH)/bin/clang++
+NVCC := $(CUDA_PATH)/bin/clang++
+# NVCC ?= $(CUDA_PATH)/bin/nvcc -ccbin $(CXX)
+
+# MODIFIED: 将NVIDIA的-lcuda和stubs路径, 替换为天数必需的-lcudart
+CUDA_LDFLAGS += -lcudart -L$(CUDA_PATH)/lib64
+LDFLAGS += -ldl -lrt 
+CXXFLAGS += -I$(CUDA_PATH)/include
+CXXFLAGS += -std=c++11 -fPIC 
+
+ifeq ($(DEBUG),1)
+CXXFLAGS += -g -D_DEBUG -Wall -Wno-tautological-pointer-compare
+CFLAGS += -g -D_DEBUG
+else
+CXXFLAGS += -O2
+CFLAGS += -O2
+endif
+
+# [重点修改] 这里定义显式的 C 编译 Include 路径
+SHIM_INC := -I$(CUDA_PATH)/include
+# Target rules
+all: libgemhook.so.1 gem-schd gem-pmgr
+
+debug.o: debug.cpp debug.h
+	# MODIFIED: 使用 $(CXX) 变量, 而非硬编码 g++
+	$(CXX) -fPIC $(CXXFLAGS) -o $@ -c $<
+
+comm.o: comm.cpp comm.h
+	# MODIFIED: 使用 $(CXX) 变量, 而非硬编码 g++
+	$(CXX) -fPIC $(CXXFLAGS) -o $@ -c $<
+
+hook.o: hook.cpp debug.h comm.h predictor.h util.h
+	# MODIFIED: 移除了 nvcc 特定的 --compiler-options 包装
+	$(NVCC) -m64 -x ivcore $(CXXFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+
+# 使用 $(CC) (即 gcc) 编译，确保生成干净的 C 符号
+shim.o: shim.c
+	$(CC) $(SHIM_INC) -fPIC $(CFLAGS) -o $@ -c $<
+
+predictor.o: predictor.cpp predictor.h debug.h
+	# MODIFIED: 使用 $(CXX) 变量, 而非硬编码 g++
+	$(CXX) -fPIC $(CXXFLAGS) -o $@ -c $<
+
+libgemhook.so.1: hook.o shim.o predictor.o debug.o comm.o
+	# MODIFIED: 此行不变, 但其依赖的变量 
+	$(EXEC) $(NVCC) -shared -m64 $(GENCODE_FLAGS) -static-libstdc++ -static-libgcc -Wl,-rpath,$(CUDA_PATH)/lib64:-Wl,-rpath,/xpushare/library/:-Wl,-rpath,/usr/lib/aarch64-linux-gnu/:-Wl,-rpath,/usr/lib64/ -o $@ $+ $(CUDA_LDFLAGS) $(LDFLAGS)
+	$(EXEC) mkdir -p $(PREFIX)/lib
+	$(EXEC) cp $@ $(PREFIX)/lib
+
+scheduler.o: scheduler.cpp debug.h comm.h util.h scheduler.h
+	# MODIFIED: 使用 $(CXX) 变量
+	$(EXEC) $(CXX) $(CXXFLAGS) -o $@ -c $<
+
+schd-priority.o: schd-priority.cpp scheduler.h
+	# MODIFIED: 使用 $(CXX) 变量
+	$(EXEC) $(CXX) $(CXXFLAGS) -o $@ -c $<
+
+gem-schd: scheduler.o schd-priority.o debug.o comm.o
+	# MODIFIED: 使用 $(CXX) 变量
+	$(EXEC) $(CXX) $(LDFLAGS) -pthread -rdynamic  $+ -o $@
+	$(EXEC) mkdir -p $(PREFIX)/bin
+	$(EXEC) cp $@ $(PREFIX)/bin
+
+pod-manager.o: pod-manager.cpp debug.h comm.h util.h
+	# MODIFIED: 使用 $(CXX) 变量
+	$(EXEC) $(CXX) $(CXXFLAGS) -o $@ -c $<
+
+gem-pmgr: pod-manager.o debug.o comm.o
+	# MODIFIED: 使用 $(CXX) 变量
+	$(EXEC) $(CXX) $(LDFLAGS) -pthread -rdynamic $+ -o $@
+	$(EXEC) mkdir -p $(PREFIX)/bin
+	$(EXEC) cp $@ $(PREFIX)/bin
+
+clean:
+	rm -f *.o ./gem-schd ./gem-pmgr ./libgemhook.so.1

@@ -1,0 +1,11 @@
+[E3] device_name=Iluvatar BI-V150
+[E3] device_total_memory=6871947673
+[E3] mem_get_info_begin free=6871947673 total=6871947673
+[E3] step=1 alloc=268435456 (0.25MiB) ok=1 free=6603512217 total=6871947673 alloc_time_sec=0.0147
+[E3] step=2 alloc=536870912 (0.50MiB) ok=1 free=6066641305 total=6871947673 alloc_time_sec=0.0009
+[E3] step=3 alloc=805306368 (0.75MiB) ok=1 free=5261334937 total=6871947673 alloc_time_sec=0.0009
+[E3] step=4 alloc=1073741824 (0.00GiB) ok=1 free=4187593113 total=6871947673 alloc_time_sec=0.0010
+[E3] step=5 alloc=1342177280 (0.00GiB) ok=1 free=2845415833 total=6871947673 alloc_time_sec=0.0009
+[E3] step=6 alloc=1610612736 (0.00GiB) ok=1 free=1234803097 total=6871947673 alloc_time_sec=0.0009
+[E3] step=7 alloc=1879048192 (0.00GiB) ok=0 free=1234803097 total=6871947673 err=OutOfMemoryError:CUDA out of memory. Tried to allocate 1.75 GiB. GPU 0 has a total capacity of 6.40 GiB of which 1.15 GiB is free. Process 2942135 has 5.38 GiB memory in use. Of the allocated memory 5.25 GiB is allocated by PyTorch, and 0 bytes is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+[E3] done

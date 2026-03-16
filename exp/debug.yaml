@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mnist-debug
+  labels:
+    "sharedgpu/gpu_request": "0.2"
+    "sharedgpu/gpu_limit": "0.4"
+    "sharedgpu/gpu_model": "Iluvatar-BI-V150"
+    "sharedgpu/gpu_mem": "0"
+spec:
+  schedulerName: xpushare-scheduler
+  restartPolicy: Never
+  containers:
+    - name: pytorch
+      image:  corex:with-greatwall
+      # --- 这是您要求的修改 ---
+      command: ["sh", "-c", "ixsmi && sleep infinity"]
+      # ------------------------
+      imagePullPolicy: Never
+      env:
+      - name: LD_DEBUG
+        value: "all"

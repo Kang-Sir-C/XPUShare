@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: corex-gpu-hook
+spec:
+  nodeName: localhost.localdomain
+  
+  # (!! 最终的关键 !!): 告诉 K8s 使用我们刚创建的 RuntimeClass
+  #runtimeClassName: iluvatar 
+  
+  restartPolicy: Never
+  containers:
+  - name: ixsmi-hook
+
+    image: corex:with-greatwall
+    env:
+    - name: IX_VISIBLE_DEVICES
+      value: "0,1,2,3" 
+    command: ["/bin/bash", "-c"]
+    args:
+    - |
+      echo "--- [带 RuntimeClass 的干净测试] ---"
+      ls -l /dev/iluvatar*
+      echo "---"
+      ixsmi                  
+      echo "-----------------------------------"
+      sleep 360000
+  volumes: []

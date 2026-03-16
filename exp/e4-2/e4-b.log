@@ -1,0 +1,16 @@
+[E4] warmup_done iters=7576 seconds=3.140
+[E4] progress elapsed_sec=1.0 iters=2362 iter_per_sec=2345.938
+[E4] progress elapsed_sec=2.0 iters=4407 iter_per_sec=2186.925
+[E4] progress elapsed_sec=3.0 iters=8343 iter_per_sec=2766.854
+[E4] progress elapsed_sec=22.1 iters=8344 iter_per_sec=378.074
+[E4] progress elapsed_sec=23.1 iters=13023 iter_per_sec=564.456
+[E4] progress elapsed_sec=24.1 iters=17402 iter_per_sec=722.841
+[E4] progress elapsed_sec=25.1 iters=21744 iter_per_sec=867.148
+[E4] progress elapsed_sec=26.1 iters=25899 iter_per_sec=993.008
+[E4] progress elapsed_sec=50.3 iters=25904 iter_per_sec=515.063
+[E4] progress elapsed_sec=51.3 iters=30541 iter_per_sec=595.386
+[E4] progress elapsed_sec=52.3 iters=34885 iter_per_sec=667.054
+[E4] progress elapsed_sec=53.3 iters=39230 iter_per_sec=736.046
+[E4] progress elapsed_sec=54.3 iters=43395 iter_per_sec=799.184
+[E4] progress elapsed_sec=78.4 iters=43400 iter_per_sec=553.670
+[E4] result seconds=78.387 iters=43400 iter_per_sec=553.666077

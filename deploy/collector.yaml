@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: kube-system
+  name: xpushare-collector
+  labels:
+    app: xpushare-collector
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/xpushare-collector"
+    prometheus.io/port: "9004"
+spec:
+  sessionAffinity: ClientIP
+  selector:
+    app: xpushare-collector
+  clusterIP: None
+  ports:
+    - name: collector
+      port: 9004
+      targetPort: 9004
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: xpushare-collector
+  namespace: kube-system
+  labels:
+    app: xpushare-collector
+spec:
+  selector:
+    matchLabels:
+      app: xpushare-collector
+  template:
+    metadata:
+      labels:
+        app: xpushare-collector
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/xpushare-collector"
+        prometheus.io/port: "9004"
+    spec:
+      nodeSelector:
+        SharedGPU: "true"
+      tolerations:
+        - key: "node-role.kubernetes.io/master"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: xpushare-collector
+          image: xpushare-collector:0227-3
+          imagePullPolicy: Never
+          securityContext:
+            privileged: true
+          ports:
+            - name: collector
+              containerPort: 9004
+              protocol: TCP
+          env:
+            # Select device discovery backend:
+            #   - iluvatar: uses go-ixml + libixml.so (default)
+            #   - nvidia-smi: uses nvidia-smi (no extra Go deps)
+            #   - mthreads-gmi: uses mthreads-gmi (MooreThreads)
+            #   - metax-mxsmi: uses mx-smi (MetaX)
+            #   - biren-brsmi: uses brsmi (BirenTech)
+            #   - generic-cmd: uses XPU_DEVICE_LIST_CMD
+            - name: XPU_PROVIDER
+              value: "iluvatar"
+
+            # Only for XPU_PROVIDER=generic-cmd (example format):
+            # - name: XPU_DEVICE_LIST_CMD
+            #   value: "echo 'GPU-0,MyCard,34359738368,0'"
+
+            # For Iluvatar CGO provider: mount the driver lib directory and add it to LD_LIBRARY_PATH.
+            - name: LD_LIBRARY_PATH
+              value: /iluvatar-drivers
+
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: xpushare-log
+              mountPath: /xpushare/log
+            - name: iluvatar-driver-libs
+              mountPath: /iluvatar-drivers
+      volumes:
+        - name: xpushare-log
+          hostPath:
+            path: /xpushare/log
+            type: DirectoryOrCreate
+        - name: iluvatar-driver-libs
+          hostPath:
+            # Must match your Iluvatar driver library directory on the node.
+            path: /usr/local/corex-4.3.6/lib64/
+            type: Directory

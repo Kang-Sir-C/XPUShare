@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: job-b
+  labels:
+    "sharedgpu/gpu_request": "0.2"
+    "sharedgpu/gpu_limit": "0.4"
+    "sharedgpu/gpu_model": "Iluvatar-BI-V150"
+    "sharedgpu/gpu_mem": "2147483648"
+spec:
+  schedulerName: xpushare-scheduler
+  restartPolicy: Never
+  containers:
+    - name: a
+      image: corex:with-greatwall
+      command: ["sh", "-c", "sleep infinity"]
+      imagePullPolicy: Never
+      env:
+      - name: CU_HOOK_DEBUG
+        value: "1"
+      - name: JOB_NAME
+        value: "B"
