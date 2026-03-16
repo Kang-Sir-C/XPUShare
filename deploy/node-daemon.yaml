@@ -105,7 +105,7 @@ spec:
         - name: xpushare-log
           mountPath: /xpushare/log
       - name: xhook-scheduler
-        image: xhook-scheduler:0227-3
+        image: xhook-scheduler:0316-1
         imagePullPolicy: Never
         volumeMounts:
         - name: xpushare-scheduler

@@ -134,7 +134,7 @@ spec:
       serviceAccountName: xpushare-scheduler
       containers:
         - name: xpushare-scheduler
-          image: xpushare-scheduler:0227-3
+          image: xpushare-scheduler:0316-1
           imagePullPolicy: Never
           command: ["xpushare-scheduler"]
           args:

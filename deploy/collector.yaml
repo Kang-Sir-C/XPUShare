@@ -51,7 +51,7 @@ spec:
           effect: "NoSchedule"
       containers:
         - name: xpushare-collector
-          image: xpushare-collector:0227-3
+          image: xpushare-collector:0316-1
           imagePullPolicy: Never
           securityContext:
             privileged: true
