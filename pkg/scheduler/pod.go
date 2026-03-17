@@ -403,6 +403,9 @@ func (kss *XPUShareScheduler) newAssumedMultiGPUPod(pod *v1.Pod, nodeName string
 
 	}
 
+	// Inject GPU device access for multi-GPU pods as well.
+	kss.injectGPUDeviceAccess(podCopy)
+
 	return podCopy
 }
 
@@ -500,6 +503,11 @@ func (kss *XPUShareScheduler) newAssumedSharedGPUPod(pod *v1.Pod, nodeName strin
 			},
 		)
 	}
+
+	// Inject GPU device access: mount /dev from host and enable privileged mode
+	// so the container can see /dev/iluvatarX (or other GPU device files).
+	kss.injectGPUDeviceAccess(podCopy)
+
 	return podCopy
 }
 
@@ -670,4 +678,46 @@ func (kss *XPUShareScheduler) visibleDevicesValueForCells(cells CellList) string
 		parts = append(parts, kss.visibleDevicesValueForCell(cell))
 	}
 	return strings.Join(parts, ",")
+}
+
+// injectGPUDeviceAccess adds privileged security context and mounts /dev from
+// the host so that the container can access GPU device files (e.g. /dev/iluvatarX).
+// This is needed when no device plugin is installed to inject GPU devices.
+func (kss *XPUShareScheduler) injectGPUDeviceAccess(podCopy *v1.Pod) {
+	privileged := true
+	for i := range podCopy.Spec.Containers {
+		c := &podCopy.Spec.Containers[i]
+		if c.SecurityContext == nil {
+			c.SecurityContext = &v1.SecurityContext{}
+		}
+		c.SecurityContext.Privileged = &privileged
+	}
+
+	// Check if /dev volume is already mounted
+	hasDevVolume := false
+	for _, v := range podCopy.Spec.Volumes {
+		if v.Name == "host-dev" {
+			hasDevVolume = true
+			break
+		}
+	}
+	if !hasDevVolume {
+		podCopy.Spec.Volumes = append(podCopy.Spec.Volumes, v1.Volume{
+			Name: "host-dev",
+			VolumeSource: v1.VolumeSource{
+				HostPath: &v1.HostPathVolumeSource{
+					Path: "/dev",
+				},
+			},
+		})
+		for i := range podCopy.Spec.Containers {
+			podCopy.Spec.Containers[i].VolumeMounts = append(
+				podCopy.Spec.Containers[i].VolumeMounts,
+				v1.VolumeMount{
+					Name:      "host-dev",
+					MountPath: "/dev",
+				},
+			)
+		}
+	}
 }
