@@ -4,20 +4,27 @@ metadata:
   name: sharepods.sharedgpu.goc
 spec:
   group: sharedgpu.goc
-  version: v1
-  scope: Namespaced 
+  scope: Namespaced
   names:
     plural: sharepods
     singular: sharepod
     kind: SharePod
     shortNames:
-    - shp 
-  additionalPrinterColumns:
-  - name: Status
-    type: string
-    description: Phase
-    JSONPath: .status.phase
-  - name: Message
-    type: string
-    description: Message
-    JSONPath: .status.message
+    - shp
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    additionalPrinterColumns:
+    - name: Status
+      type: string
+      description: Phase
+      jsonPath: .status.phase
+    - name: Message
+      type: string
+      description: Message
+      jsonPath: .status.message
+    schema:
+      openAPIV3Schema:
+        type: object
+        x-kubernetes-preserve-unknown-fields: true
