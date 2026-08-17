@@ -1,0 +1,14 @@
+cellTypes:
+  BI-V150:
+    childCellType: "Iluvatar-BI-V150"
+    childCellNumber: 16
+    childCellPriority: 100
+    isNodeLevel: true
+  NODE-16-V150:
+    childCellType: BI-V150
+    childCellNumber: 1
+
+cells:
+- cellType: NODE-16-V150
+  cellChildren:
+  - cellId: tianshu

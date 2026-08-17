@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: xpushare-topology-config
+  namespace: kube-system
+data:
+  xpushare-config.yaml: |
+    cellTypes:
+      NODE-16-V150:
+        childCellType: "Iluvatar-BI-V150"
+        childCellNumber: 16
+        childCellPriority: 100
+        isNodeLevel: true
+    cells:
+      - cellType: NODE-16-V150
+        # Must match your Kubernetes node name (kubectl get nodes)
+        cellId: "localhost.localdomain"

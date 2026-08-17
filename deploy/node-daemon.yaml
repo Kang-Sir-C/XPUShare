@@ -1,0 +1,150 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: xpushare-config
+  namespace: kube-system
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: xpushare-config
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: xpushare-config
+subjects:
+- kind: ServiceAccount
+  name: xpushare-config
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: xpushare-config
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: xpushare-node-daemon
+  namespace: kube-system
+  labels:
+    app: xpushare-node-daemon
+spec:
+  selector:
+    matchLabels:
+      app: xpushare-node-daemon
+  template:
+    metadata:
+      labels:
+        app: xpushare-node-daemon
+    spec:
+      serviceAccountName: xpushare-config
+      nodeSelector:
+        SharedGPU: "true"
+      terminationGracePeriodSeconds: 0
+      restartPolicy: Always
+
+      # These must be at pod spec level (same level as containers).
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
+      initContainers:
+      - name: xpushare-query-pod-ip
+        image: xpushare-query-ip:0227-3
+        imagePullPolicy: Never
+        env:
+        - name: XPUSHARE_SCHEDULER_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        volumeMounts:
+        - name: xpushare-library
+          mountPath: /xpushare/library
+      - name: xhook-init
+        image: xhook-init:0227-3
+        imagePullPolicy: Never
+        volumeMounts:
+        - name: xpushare-library
+          mountPath: /xpushare/library
+        - name: xpushare-log
+          mountPath: /xpushare/log
+
+      containers:
+      - name: config
+        image: xpushare-config:0227-3
+        imagePullPolicy: Never
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        command: ["xpushare-config"]
+        args:
+        - --level=3
+        # Existing Prometheus (no Operator/CRDs).
+        # In-cluster Service DNS (icps-monitor/prometheus).
+        - --prometheusURL=http://prometheus.icps-monitor.svc:9090
+        # - --prometheusURL=http://127.0.0.1:30002
+        volumeMounts:
+        - name: xpushare-scheduler
+          mountPath: /xpushare/scheduler
+        - name: xpushare-library
+          mountPath: /xpushare/library
+        - name: xpushare-log
+          mountPath: /xpushare/log
+      - name: xhook-scheduler
+        image: xhook-scheduler:0227-3
+        imagePullPolicy: Never
+        volumeMounts:
+        - name: xpushare-scheduler
+          mountPath: /xpushare/scheduler
+        - name: xpushare-library
+          mountPath: /xpushare/library
+        - name: xpushare-log
+          mountPath: /xpushare/log
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - test -f /xpushare/scheduler/launcher-state/health
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - |
+              ts=$(cat /xpushare/scheduler/launcher-state/health 2>/dev/null || echo 0)
+              now=$(date +%s)
+              test $((now - ts)) -lt 60
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          failureThreshold: 4
+
+      volumes:
+      - name: xpushare-scheduler
+        hostPath:
+          path: /xpushare/scheduler
+          type: DirectoryOrCreate
+      - name: xpushare-library
+        hostPath:
+          path: /xpushare/library
+          type: DirectoryOrCreate
+      - name: xpushare-log
+        hostPath:
+          path: /xpushare/log
+          type: DirectoryOrCreate

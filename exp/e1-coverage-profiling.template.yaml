@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: xpushare-e1-coverage-profiling
+  labels:
+    # Adjust these labels/annotations to match your scheduler's contract.
+    "sharedgpu/gpu_request": "0.2"
+    "sharedgpu/gpu_limit": "0.4"
+spec:
+  restartPolicy: Never
+  # If you deploy XPUShare as a dedicated scheduler (see `deploy/scheduler.yaml`),
+  # you must set the schedulerName so the Pod is handled by it.
+  schedulerName: xpushare-scheduler
+  containers:
+    - name: workload
+      # Replace with your local image that contains a minimal PyTorch workload.
+      image: <YOUR_IMAGE>
+      command: ["sh", "-c", "python -c 'import torch; print(torch.__version__); import time; time.sleep(30)'"]
+      imagePullPolicy: IfNotPresent
+
+      env:
+        # Profiling only: collect coverage signals without enforcing quotas.
+        - name: XPUSHARE_PROFILING
+          value: "1"
+        - name: XPUSHARE_DRIVER_COVERAGE
+          value: "1"
+        - name: XPUSHARE_SHIM_COVERAGE
+          value: "1"
+
+        # If your deployment does not inject the library automatically, you may
+        # need to preload it here (platform-dependent):
+        # - name: LD_PRELOAD
+        #   value: "/xpushare/library/libxhook.so.1"
+
+      volumeMounts:
+        # Ensure hook.log is writable and persisted on the node.
+        - name: xpushare-log
+          mountPath: /xpushare/log
+        # If you manually preload the library, also mount it:
+        # - name: xpushare-library
+        #   mountPath: /xpushare/library
+        #   readOnly: true
+
+  volumes:
+    - name: xpushare-log
+      hostPath:
+        path: /xpushare/log
+        type: DirectoryOrCreate
+    # - name: xpushare-library
+    #   hostPath:
+    #     path: /xpushare/library
+    #     type: Directory

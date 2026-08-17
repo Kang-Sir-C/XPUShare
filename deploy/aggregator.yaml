@@ -1,0 +1,119 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: xpushare-aggregator
+  namespace: kube-system
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: xpushare-aggregator
+rules:
+- apiGroups: [""]
+  resources: ["pods", "configmaps", "nodes"]
+  verbs: ["get", "watch", "list"]
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: xpushare-aggregator
+subjects:
+- kind: ServiceAccount
+  name: xpushare-aggregator
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: xpushare-aggregator
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: kube-system
+  name: xpushare-aggregator
+  labels:
+    app: xpushare-aggregator
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/xpushare-aggregator"
+    prometheus.io/port: "9005"
+spec:
+  sessionAffinity: ClientIP
+  selector:
+    app: xpushare-aggregator
+  ports:
+  - name: aggregator
+    port: 9005
+    targetPort: 9005
+    protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xpushare-aggregator
+  namespace: kube-system
+  annotations:
+    scheduler.alpha.kubernetes.io/critical-pod: ""
+  labels:
+    app: xpushare-aggregator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: xpushare-aggregator
+  template:
+    metadata:
+      labels:
+        app: xpushare-aggregator
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/xpushare-aggregator"
+        prometheus.io/port: "9005"
+    spec:
+      serviceAccountName: xpushare-aggregator
+      containers:
+        - name: xpushare-aggregator
+          image: xpushare-aggregator:0227-3
+          imagePullPolicy: Never
+          command: ["xpushare-aggregator"]
+          args:
+            - --level=3
+          ports:
+          - name: aggregator
+            containerPort: 9005
+            protocol: TCP
+          volumeMounts:
+            - name: "xpushare-log"
+              mountPath: "/xpushare/log"
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+      volumes:
+        - name: "xpushare-log"
+          hostPath:
+            path: "/xpushare/log"
+            type: DirectoryOrCreate
+      priorityClassName: system-node-critical
+      tolerations:
+      - key: "CriticalAddonsOnly"
+        operator: "Exists"
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: "node-role.kubernetes.io/master"
+                operator: "Exists"
+            - matchExpressions:
+              - key: "node-role.kubernetes.io/control-plane"
+                operator: "Exists"
+

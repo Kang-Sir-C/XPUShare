@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: xpushare-e2-binding-check
+  labels:
+    "sharedgpu/gpu_request": "0.2"
+    "sharedgpu/gpu_limit": "0.2"
+
+spec:
+  runtimeClassName: ix
+  restartPolicy: Never
+  schedulerName: xpushare-scheduler
+  containers:
+    - name: workload
+      image: corex:4.3.6
+      imagePullPolicy: IfNotPresent
+      command:
+        - sh
+        - -lc
+        - |
+          set -eu
+          echo "[E2] env snapshot (binding contract)"
+          env | (grep -E 'VISIBLE_DEVICES|LD_PRELOAD|XPUSHARE_ENFORCEMENT_LAYER|POD_MANAGER_(IP|PORT)|POD_NAME' || true)
+          echo "[E2] IX_VISIBLE_DEVICES=${IX_VISIBLE_DEVICES:-}"
+          echo "[E2] CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-}"
+          echo "[E2] MACA_VISIBLE_DEVICES=${MACA_VISIBLE_DEVICES:-}"
+          echo "[E2] MUSA_VISIBLE_DEVICES=${MUSA_VISIBLE_DEVICES:-}"
+          echo "[E2] MTHREADS_VISIBLE_DEVICES=${MTHREADS_VISIBLE_DEVICES:-}"
+          echo "[E2] done"
+          sleep 3600

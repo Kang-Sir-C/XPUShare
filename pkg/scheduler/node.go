@@ -1,0 +1,309 @@
+package scheduler
+
+import (
+	"xpushare/pkg/lib/bitmap"
+
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/tools/cache"
+	// "xpushare/pkg/lib/stack"
+)
+
+const (
+	NodeLabelFilter = "SharedGPU"
+	// the start port of pod manager
+	PodManagerPortStart = 50050
+)
+
+// filter the node without label
+func (kss *XPUShareScheduler) isGPUNode(obj interface{}) bool {
+	node := kss.convertToNode(obj)
+	val, ok := node.Labels[NodeLabelFilter]
+	if ok && val == "true" {
+		return true
+	}
+	kss.ksl.Warnf("Filter node %v without label SharedGPU=true", node.Name)
+	return false
+}
+
+func (kss *XPUShareScheduler) addNode(obj interface{}) {
+	node := kss.convertToNode(obj)
+	name := node.Name
+
+	kss.ksl.Infof("[ADD NODE] %v", name)
+
+	kss.nodePodManagerPortBitmapMutex.Lock()
+	defer kss.nodePodManagerPortBitmapMutex.Unlock()
+
+	if kss.nodePodManagerPortBitmap[name] == nil {
+		kss.nodePodManagerPortBitmap[name] = bitmap.NewRRBitmap(512)
+		kss.nodePodManagerPortBitmap[name].Mask(0)
+	}
+
+	kss.getGPUByNode(name)
+
+	kss.cellMutex.Lock()
+	defer kss.cellMutex.Unlock()
+
+	if isNodeHealth(node) {
+		kss.setNodeStatus(name, true)
+	} else {
+		kss.setNodeStatus(name, false)
+	}
+}
+
+func (kss *XPUShareScheduler) updateNode(oldObj, newObj interface{}) {
+	//oldNode := kss.convertToNode(oldObj)
+	newNode := kss.convertToNode(newObj)
+	name := newNode.Name
+	kss.ksl.Infof("[UPDATE NODE] %v", name)
+	kss.cellMutex.Lock()
+	defer kss.cellMutex.Unlock()
+
+	if isNodeHealth(newNode) {
+		kss.getGPUByNode(name)
+		kss.setNodeStatus(name, true)
+	} else {
+		kss.setNodeStatus(name, false)
+	}
+}
+
+func (kss *XPUShareScheduler) deleteNode(obj interface{}) {
+	node := kss.convertToNode(obj)
+	name := node.Name
+	kss.ksl.Infof("[DELETE NODE] %v", name)
+
+	kss.cellMutex.Lock()
+	defer kss.cellMutex.Unlock()
+	kss.setNodeStatus(name, false)
+}
+
+func (kss *XPUShareScheduler) convertToNode(obj interface{}) *v1.Node {
+	switch t := obj.(type) {
+	case *v1.Node:
+		return obj.(*v1.Node)
+	case cache.DeletedFinalStateUnknown:
+		if node, ok := t.Obj.(*v1.Node); ok {
+			return node
+		}
+		kss.ksl.Fatalf("Faild to convert DeletedFinalStateUnknown.Obj to Node: %#v", obj)
+	default:
+		kss.ksl.Fatalf("Faild to convert DeletedFinalStateUnknown.Obj to Node: %#v", obj)
+	}
+	return nil
+}
+
+func isNodeHealth(node *v1.Node) bool {
+	if node.Spec.Unschedulable {
+		return false
+	}
+	for _, c := range node.Status.Conditions {
+		if c.Type == v1.NodeReady && c.Status == v1.ConditionTrue {
+			return true
+		}
+	}
+
+	return false
+}
+
+// set the cell status according to the specified node status
+func (kss *XPUShareScheduler) setNodeStatus(nodeName string, healthy bool) {
+	kss.ksl.Debugf("setNodeStatus: %v, %v", nodeName, healthy)
+
+	for _, freeList := range kss.cellFreeList {
+		for _, cellList := range freeList {
+			for _, cell := range cellList {
+				
+				// kss.setCellStatus(cell, healthy, nodeName)
+				if cell.state == CellFree {
+					kss.setCellStatus(cell, healthy, nodeName)
+				} else {
+					kss.setCellHealthy(cell, healthy, nodeName)
+				}
+			}
+		}
+	}
+}
+
+// set the cell health, uuid, memory
+func (kss *XPUShareScheduler) setCellStatus(cell *Cell, healthy bool, nodeName string) {
+	// get the gpu information of node & cell type
+	GPUs := kss.gpuInfos[nodeName][cell.leafCellType]
+	n := len(GPUs)
+	// if there is no specified gpu in the node,
+	// it means there is no the specified cells that need to be processed too.
+	if n == 0 {
+		kss.ksl.Debugf("No corresponding gpu %v in the node %v", cell.leafCellType, nodeName)
+		return
+	}
+
+	s := NewStack()
+	s.Push(cell)
+
+	idx := 0
+
+	kss.ksl.Debug("===============CHECK===============")
+	kss.ksl.Debugf("Currently, there are %v gpus(%v) in node %v ", n, cell.leafCellType, nodeName)
+
+	for s.Len() > 0 {
+		current := s.Pop()
+
+		kss.ksl.Debugf("Cell: %+v", current)
+
+		if current.healthy == healthy {
+			continue
+		}
+
+		node := current.node
+		if node == nodeName || node == "" {
+			current.healthy = healthy
+			current.state = CellFilled
+
+
+			// 🔴 DEBUG DUMP 4: 打印叶子 Cell 激活状态和资源
+			if current.level == 1 && idx < n {
+				currentUUID := GPUs[idx].uuid
+
+				
+				gpuIndex := currentUUID
+				if false {
+					kss.ksl.Errorf("[FATAL INDEX] UUID %s not found in static map. Skipping.", currentUUID)
+					idx++
+					return // 找不到索引，跳过这个 GPU
+				}
+					
+				///////////////////////////////////
+				current.uuid = gpuIndex
+				current.deviceIndex = GPUs[idx].index
+				current.fullMemory = GPUs[idx].memory
+				current.freeMemory = current.fullMemory
+				
+				// 🔔 关键修复推论：手动确保 available 被重置为满值 1.0 (最强诊断)
+				current.available = current.leafCellNumber 
+				current.availableWholeCell = current.leafCellNumber
+
+
+				idx++
+				kss.ksl.Errorf("[DEBUG NODE] [ACTIVATE] Cell ID: %s, UUID: %s, Index: %d, Available RESET: %v, Full Mem: %v",
+					current.id, current.uuid, current.deviceIndex, current.available, current.fullMemory)
+				kss.ksl.Debugf("Level 1: idx: %v, %+v", idx-1, current)
+				if current.parent != nil {
+					// pass child cells' gpu memory to parent cells
+					kss.passMemoryToParent(current)
+				}
+				kss.leafCellsMutex.Lock()
+				kss.leafCells[current.uuid] = current
+				kss.ksl.Debugf("Set leaf cell: %v -> %+v", current.uuid, kss.leafCells[current.uuid])
+				kss.leafCellsMutex.Unlock()
+			}
+
+			parent := current.parent
+			if parent != nil && parent.healthy != healthy {
+				kss.ksl.Debugf("Parent: %+v", parent)
+				s.Push(parent)
+			}
+			child := current.child
+			if child == nil {
+				continue
+			}
+			for i := range child {
+
+				node = child[i].node
+				if (node == nodeName || node == "") && child[i].healthy != healthy {
+					kss.ksl.Debugf("Child: %+v", child[i])
+					s.Push(child[i])
+				}
+			}
+
+		}
+	}
+
+}
+
+// set the cell healthy according to the specified node status
+// func (kss *XPUShareScheduler) setNodehealthy(nodeName string, healthy bool) {
+// 	kss.ksl.Debugf("setNodehealthy: %v, %v", nodeName, healthy)
+// 	for _, freeList := range kss.cellFreeList {
+// 		for _, cellList := range freeList {
+// 			for _, cell := range cellList {
+// 				if cell.state == CellFree {
+// 					kss.setCellStatus(cell, healthy, nodeName)
+// 				} else {
+// 					kss.setCellHealthy(cell, healthy, nodeName)
+// 				}
+// 			}
+// 		}
+// 	}
+// }
+
+// set the cell health
+func (kss *XPUShareScheduler) setCellHealthy(cell *Cell, healthy bool, nodeName string) {
+
+	s := NewStack()
+	s.Push(cell)
+
+	for s.Len() > 0 {
+		current := s.Pop()
+
+		kss.ksl.Debugf("Cell: %+v", current)
+
+
+		if current.healthy == healthy {
+			continue
+		}
+
+		node := current.node
+		if node == nodeName || node == "" {
+			current.healthy = healthy
+
+			parent := current.parent
+			if parent != nil && parent.healthy != healthy {
+				kss.ksl.Debugf("Parent: %+v", parent)
+				s.Push(parent)
+			}
+			child := current.child
+			if child == nil {
+				continue
+			}
+			for i := range child {
+
+				node = child[i].node
+				if (node == nodeName || node == "") && child[i].healthy != healthy {
+					kss.ksl.Debugf("Child: %+v", child[i])
+					s.Push(child[i])
+				}
+			}
+		}
+
+	}
+}
+
+// pass child cells gpu memory to parent cells
+func (kss *XPUShareScheduler) passMemoryToParent(cell *Cell) {
+	kss.ksl.Debugf("[passMemoryToParent]")
+
+	s := NewStack()
+	s.Push(cell)
+
+	isChild := true
+	memory := int64(0)
+	for s.Len() > 0 {
+
+		current := s.Pop()
+		if isChild {
+			isChild = false
+			memory = current.fullMemory
+			kss.ksl.Debugf("passMemoryToParent - child: %+v", current)
+		}
+
+		if current.parent != nil {
+			parent := current.parent
+			parent.freeMemory += memory
+			parent.fullMemory += memory
+			if parent.parent != nil {
+				s.Push(parent)
+			}
+			kss.ksl.Debugf("passMemoryToParent -parent: %+v", parent)
+		}
+
+	}
+}
